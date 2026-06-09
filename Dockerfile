@@ -1,12 +1,11 @@
-FROM node:10-alpine as node
+FROM node:18-alpine as builder
 WORKDIR /app
-COPY package*.json /app/
+COPY package*.json ./
 RUN npm install
-COPY ./ /app/
-ARG TARGET=ng-deploy
-RUN npm run ${TARGET}
+COPY . .
+RUN npm run build
 
-FROM nginx:1.13
-COPY --from=node /app/dist/ /usr/share/nginx/html
-COPY ./nginx-custom.conf /etc/nginx/conf.d/default.conf
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
 EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
