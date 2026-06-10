@@ -1,9 +1,6 @@
-version: '3.8'
-
+version: '3.3'
 services:
   frontend:
     image: hbd0214/234-deploylab-frontend:latest
-    container_name: frontend
-    restart: always
     ports:
-      - "8081:80"
+      - "8086:80"
