@@ -24,28 +24,32 @@ jobs:
         with:
           context: .
           push: true
-          tags: hbd0214/234-deploylab-frontend:latest   # 改对用户名
+          tags: hbd0214/234-deploylab-frontend:latest
 
-      - name: Copy docker-compose to server
-        uses: appleboy/scp-action@master
+      - name: Save Docker image to tar
+        run: |
+          docker pull hbd0214/234-deploylab-frontend:latest
+          docker save hbd0214/234-deploylab-frontend:latest -o frontend-image.tar
+          chmod 666 frontend-image.tar
+
+      - name: Copy image and docker-compose to server
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.HOST_SERVER }}
-          username: root                                   # 你服务器是 root
+          username: root
           key: ${{ secrets.HOST_SSH_PRIVATE_KEY }}
-          source: "docker-compose.yml"
-          target: "/root/frontend"                         # 路径改对
+          source: "frontend-image.tar,docker-compose.yml"
+          target: "/root/frontend"
 
-      - name: Deploy to server
-        uses: appleboy/ssh-action@master
+      - name: Load image and deploy
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.HOST_SERVER }}
           username: root
           key: ${{ secrets.HOST_SSH_PRIVATE_KEY }}
           script: |
-            set -e
-            mkdir -p /root/frontend
             cd /root/frontend
-            docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_TOKEN }}
+            docker load -i frontend-image.tar
             docker compose down || true
-            docker compose pull
-            docker compose up -d
+            docker compose up -d --no-pull
+            rm -f frontend-image.tar
